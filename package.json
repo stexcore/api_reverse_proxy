@@ -1,0 +1,20 @@
+{
+  "name": "api_reverse_proxy",
+  "version": "1.0.0",
+  "description": "Server (API) that allows creating a reverse proxy and establishing connection with devices outside the global scope",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.10",
+    "typescript": "^5.5.3"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
