@@ -20,7 +20,7 @@ const middlewares = [
 router.use(morgan("dev"));
 
 // Append segments of other routers
-router.use("/example", ...middlewares, exampleRouter);
+router.use("/example", exampleRouter);
 router.use("/proxy", proxyRouter);
 
 // append middleware errors
