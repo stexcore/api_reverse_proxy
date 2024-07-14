@@ -2,23 +2,31 @@ import express from "express";
 import http from "http";
 import router from "./routers/router";
 import { Server as ServerIO, Socket } from "socket.io";
+import { ExtendedError } from "socket.io/dist/namespace";
+import "colors";
+import ManageTunnelsProxy from "./app/manage.tunnels";
 
 export default class ServerProxy {
 
     /**
      * Application express
      */
-    private app: express.Application;
+    private readonly app: express.Application;
 
     /**
      * HTTP Server
      */
-    private server: http.Server;
+    private readonly server: http.Server;
 
     /**
      * IO server
      */
-    private io: ServerIO;
+    private readonly io: ServerIO;
+
+    /**
+     * Manage tunnels proxy
+     */
+    public readonly manageTunnels = new ManageTunnelsProxy();
 
     /**
      * Builder server
@@ -28,8 +36,10 @@ export default class ServerProxy {
         this.server = http.createServer(this.app);
         this.io = new ServerIO(this.server, { cors: { origin: "*" }});
 
-        this.app.use(router);
+        this.io.use(this.HandleMiddlewareConnection.bind(this));
         this.io.on("connection", this.HandleInitConnection.bind(this));
+
+        this.app.use(router(this));
     }
 
     /**
@@ -69,13 +79,34 @@ export default class ServerProxy {
         });
     }
 
+    private HandleMiddlewareConnection(socket: Socket, next: (err?: ExtendedError) => void) {
+        const { proxyName } = socket.handshake.query;
+
+        // check the proxyName is valid
+        if(typeof proxyName !== "string") 
+            return next(new Error("The SearchParam 'ProxyName' is required"));
+        
+        // TODO: 
+        // check if exist other connection with equal name
+        // const connection = this.GetConnection(proxyName)
+
+        // if(connection) 
+        //     return next(new ErrorNotAvariableProxyName("NameProxy is'nt avariable"))
+        
+        // all correct to connect
+        next();
+    }
+
     /**
      * Manage a new connection of socket
      * @param socket Socket IO
      */
     private HandleInitConnection(socket: Socket) {
-        console.log("Socket connected!");
+        const { proxyName } = socket.handshake.query;
 
-        // TODO: Implement Logic
+        console.log(
+            "Connection to proxy".green, String(proxyName).cyan, 
+            "via socket has been established successfully".green
+        );
     }
 }
