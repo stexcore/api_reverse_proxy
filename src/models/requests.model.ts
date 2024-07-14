@@ -25,6 +25,11 @@ export interface IRequestHTTP {
     readonly id_request: number;
 
     /**
+     * ProxyName
+     */
+    readonly proxyName: string;
+
+    /**
      * Emitted event of http init, is issued when it is ready to send data to the server
      * @param eventType Http Init Event
      * @param callback callback

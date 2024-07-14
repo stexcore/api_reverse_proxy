@@ -97,6 +97,16 @@ export default function makeExampleRouter(server: ServerProxy) {
             next(err);
         }
     });
+
+    exampleRouter.get("/continue", (req, res, next) => {
+        try {
+            res.setHeader("Content-Type", "application/json");
+            res.write("{\"success\":true");
+        }
+        catch(err) {
+            next(err);
+        }
+    });
     
     // export router
     return exampleRouter;

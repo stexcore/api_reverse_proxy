@@ -36,6 +36,11 @@ export default class ManageTunnelsProxy {
             throw new Error("The socket '" + proxyName + "' has been registered");
         }
 
+        console.log(
+            "Connection to proxy".green, String(proxyName).cyan, 
+            "via socket has been established successfully".green
+        );
+
         // register tunnel
         this.tunnels.push({
             proxyName: proxyName,
@@ -50,6 +55,23 @@ export default class ManageTunnelsProxy {
         socket.on("disconnect", (reason, description) => {
             // remove of memory
             this.tunnels = this.tunnels.filter(tunnelItem => tunnelItem.proxyName !== proxyName);
+
+            // get requests by associated proxyname
+            const requestToEnd: IRequestHTTP[] = this.requests.filter(requestItem => (
+                requestItem.proxyName === proxyName
+            ));
+
+            // earch all request for send events error and close, 
+            // earch all request and check if distint of current proxyname 
+            // of property **this.requests**
+            requestToEnd.forEach(requestItem => {
+                requestItem.emit("http_error", new Error("Lost connection to tunnel proxy"));
+                requestItem.emit("http_close");
+            });
+
+            console.log(
+                "Lost Connection to proxy".red, String(proxyName).yellow,
+            );
         });
 
         socket.on("http_init", (id_request: number) => {
@@ -114,6 +136,15 @@ export default class ManageTunnelsProxy {
             }
             else abortRequest(id_request);
         });
+
+        socket.on("http_error", (id_request: number, errorMsg: string) => {
+            const requestHttp = this.GetRequestHTTP(id_request);
+
+            if(requestHttp) {
+                requestHttp.emit("http_error", new Error(errorMsg));
+            }
+            else abortRequest(id_request);
+        });
     }
 
     public CreateRequestHTTP(proxyName: string, request: IRequest): IRequestHTTP {
@@ -142,6 +173,9 @@ export default class ManageTunnelsProxy {
 
             // ID request
             id_request: id_request,
+
+            // proxyName
+            proxyName: proxyName,
 
             // Add listen
             on(eventType: string, callback: (...args: any[]) => void): void {
@@ -174,7 +208,7 @@ export default class ManageTunnelsProxy {
 
             // abort request
             abort(err?: Error): void {
-                emitEvent("http_abort", id_request, err?.message ?? null);
+                emitEvent("http_abort", id_request, err?.message ?? "Unknow Error");
             }
         };
 

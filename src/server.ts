@@ -104,9 +104,6 @@ export default class ServerProxy {
     private HandleInitConnection(socket: Socket) {
         const { proxyName } = socket.handshake.query;
 
-        console.log(
-            "Connection to proxy".green, String(proxyName).cyan, 
-            "via socket has been established successfully".green
-        );
+        this.manageTunnels.RegisterSocket(proxyName as string, socket);
     }
 }
