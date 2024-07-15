@@ -1,6 +1,6 @@
 {
   "name": "api_reverse_proxy",
-  "version": "1.0.0",
+  "version": "1.0.0-beta",
   "description": "Server (API) that allows creating a reverse proxy and establishing connection with devices outside the global scope",
   "main": "index.js",
   "scripts": {

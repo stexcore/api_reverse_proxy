@@ -1,6 +1,6 @@
 import { Socket } from "socket.io";
 import { IRequest, IRequestHTTP } from "../models/requests.model";
-import { ErrorNotFoundTunnelProxy } from "../classes/errors.class";
+import { ErrorNotAvariableProxyName, ErrorNotFoundTunnelProxy } from "../classes/errors.class";
 
 export default class ManageTunnelsProxy {
 
@@ -26,6 +26,10 @@ export default class ManageTunnelsProxy {
 
     }
 
+    isRegisteredSocket(proxyName: string): boolean {
+        return this.tunnels.some(tunnelItem => tunnelItem.proxyName === proxyName);
+    }
+
     public RegisterSocket(proxyName: string, socket: Socket): void {
         
         if(!socket.connected) {
@@ -33,7 +37,7 @@ export default class ManageTunnelsProxy {
         }
         
         if(this.tunnels.some(tunnelItem => tunnelItem.proxyName === proxyName)) {
-            throw new Error("The socket '" + proxyName + "' has been registered");
+            throw new ErrorNotAvariableProxyName("The socket '" + proxyName + "' has been registered");
         }
 
         console.log(

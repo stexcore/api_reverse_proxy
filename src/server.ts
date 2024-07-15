@@ -5,6 +5,7 @@ import { Server as ServerIO, Socket } from "socket.io";
 import { ExtendedError } from "socket.io/dist/namespace";
 import "colors";
 import ManageTunnelsProxy from "./app/manage.tunnels";
+import { ErrorNotAvariableProxyName } from "./classes/errors.class";
 
 export default class ServerProxy {
 
@@ -90,8 +91,8 @@ export default class ServerProxy {
         // check if exist other connection with equal name
         // const connection = this.GetConnection(proxyName)
 
-        // if(connection) 
-        //     return next(new ErrorNotAvariableProxyName("NameProxy is'nt avariable"))
+        if(this.manageTunnels.isRegisteredSocket(proxyName)) 
+            return next(new ErrorNotAvariableProxyName("NameProxy is'nt avariable"))
         
         // all correct to connect
         next();
@@ -104,6 +105,12 @@ export default class ServerProxy {
     private HandleInitConnection(socket: Socket) {
         const { proxyName } = socket.handshake.query;
 
-        this.manageTunnels.RegisterSocket(proxyName as string, socket);
+        try {
+            this.manageTunnels.RegisterSocket(proxyName as string, socket);
+        }
+        catch(err) {
+            console.error(err instanceof Error ? err.message : "Unknow");
+            socket.disconnect();
+        }
     }
 }
