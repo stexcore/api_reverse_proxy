@@ -81,15 +81,18 @@ export default class ServerProxy {
     }
 
     private HandleMiddlewareConnection(socket: Socket, next: (err?: ExtendedError) => void) {
-        const { proxyName } = socket.handshake.query;
+        const [
+            subdomain,
+            ...hostname
+        ] = (socket.handshake.headers.host || "").split(".");
 
-        // check the proxyName is valid
-        if(typeof proxyName !== "string") 
+        if(!(hostname.length && subdomain.endsWith("-proxy"))) {
+            // throw error
             return next(new Error("The SearchParam 'ProxyName' is required"));
-        
-        // TODO: 
-        // check if exist other connection with equal name
-        // const connection = this.GetConnection(proxyName)
+        }
+
+        // extract proxy name
+        const proxyName = subdomain.replace(/-proxy$/, "");
 
         if(this.manageTunnels.isRegisteredSocket(proxyName)) 
             return next(new ErrorNotAvariableProxyName("NameProxy is'nt avariable"))
@@ -103,7 +106,18 @@ export default class ServerProxy {
      * @param socket Socket IO
      */
     private HandleInitConnection(socket: Socket) {
-        const { proxyName } = socket.handshake.query;
+        const [
+            subdomain,
+            ...hostname
+        ] = (socket.handshake.headers.host || "").split(".");
+
+        if(!(hostname.length && subdomain.endsWith("-proxy"))) {
+            // throw error
+            return socket.disconnect();
+        }
+
+        // extract proxy name
+        const proxyName = subdomain.replace(/-proxy$/, "");
 
         try {
             this.manageTunnels.RegisterSocket(proxyName as string, socket);

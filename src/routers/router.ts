@@ -5,6 +5,7 @@ import catchHttpErrorMiddleware from "../middleware/catchHttpError.middleware";
 import catchGlobalErrorMiddleware from "../middleware/catchGlobalError.middleware";
 import morgan from "morgan";
 import ServerProxy from "../server";
+import makeProxyMiddleware from "../middleware/proxy.middleware";
 
 /**
  * Make the router base of server proxy
@@ -26,10 +27,11 @@ export default function makeRouter(server: ServerProxy) {
     
     // append middlewares
     router.use(morgan("dev"));
+    router.use(makeProxyMiddleware(server));
     
     // Append segments of other routers
     router.use("/example", exampleRouter(server));
-    router.use("/proxy", proxyRouter(server));
+    // router.use("/proxy", proxyRouter(server));
     
     // append middleware errors
     router.use(catchHttpErrorMiddleware);
