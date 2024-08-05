@@ -1,12 +1,15 @@
 import { Socket } from "socket.io";
 import { IRequest, IRequestHTTP } from "../models/requests.model";
 import { ErrorNotAvariableProxyName, ErrorNotFoundTunnelProxy } from "../classes/errors.class";
+import { IWebsocketConnection, IWebsocketRequest } from "../models/websockets.model";
 
 export default class ManageTunnelsProxy {
 
     private hIdRequest: number = 0;
 
     private requests: IRequestHTTP[];
+
+    private connections: IWebsocketConnection[];
     
     private tunnels: {
         socket: Socket,
@@ -16,6 +19,7 @@ export default class ManageTunnelsProxy {
     constructor() {
         this.tunnels = [];
         this.requests = [];
+        this.connections = [];
     }
 
     async inicialize() {
@@ -242,6 +246,99 @@ export default class ManageTunnelsProxy {
     public GetRequestHTTP(id_request: number): IRequestHTTP | null {
         const request = this.requests.find(requestItem => requestItem.id_request === id_request);
         return request ?? null;
+    }
+
+    public CreateWebsocketConnection(proxyName: string, request: IWebsocketRequest): IWebsocketConnection {
+        const tunnel = this.tunnels.find(tunnelItem => tunnelItem.proxyName === proxyName);
+
+        // check if is'nt exist
+        if(!tunnel) {
+            throw new ErrorNotFoundTunnelProxy("Does not exist the tunnel '" + proxyName + "'");
+        }
+        
+        // request url
+        // const url = new URL(request.path, this.hostproxy_url);
+        const id_request = ++this.hIdRequest;
+        const listenner: {
+            eventType: string,
+            callback: (...args: any[]) => void
+        }[] = [];
+
+        function emitEvent(eventName: string, ...args: any[]) {
+            if(tunnel?.socket.connected) {
+                tunnel.socket.emit(eventName, ...args);
+            }
+        }
+
+        const connectionWS: IWebsocketConnection = {
+
+            // ID request
+            id_connection: id_request,
+
+            // proxyName
+            proxyName: proxyName,
+
+            // Add listen
+            on(eventType: string, callback: (...args: any[]) => void): void {
+                // add listenner
+                listenner.push({ eventType, callback })
+            },
+
+            // write body
+            send(chunk): void {
+                emitEvent("websocket_data", id_request, Buffer.from(chunk), typeof chunk !== "string");
+            },
+
+            emit(eventType: string, ...args: any[]): void {
+                listenner.forEach(listennerItem => {
+                    try {
+                        if(listennerItem.eventType === eventType) {
+                            listennerItem.callback(...args);
+                        }
+                    }
+                    catch(err) {
+                        console.error(err);
+                    }
+                });
+            },
+
+            // end and emit request
+            close(err?: Error): void {
+                if(err) {
+                    emitEvent("websocket_end", id_request);
+                }
+                else {
+                    emitEvent("websocket_end", id_request);
+                }
+            },
+
+            // abort request
+            // abort(err?: Error): void {
+            //     emitEvent("websocket_abort", id_request, err?.message ?? "Unknow Error");
+            // }
+        };
+
+        // Append listen to close socket tcp
+        connectionWS.on("websocket_close", () => {
+            // remove of memory
+            this.requests = this.requests.filter(requestItem => requestItem.id_request !== id_request);
+        });
+
+        // Add request of array
+        this.connections.push(connectionWS);
+
+        const headers: {[key: string]: string} = {};
+
+        request.headers.forEach((value, key) => {
+            headers[key] = value;
+        });
+
+        tunnel.socket.emit("websocket_request", id_request, {
+            ...request,
+            headers: headers
+        });
+
+        return connectionWS;
     }
 
 
